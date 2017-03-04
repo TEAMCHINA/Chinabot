@@ -35,6 +35,17 @@ namespace Chinabot.Managers
             ConnectedChannels.AddOrUpdate(guild.Id, client, (key, oldClient) => client);
         }
 
+        public async Task LeaveAudioChannels(IGuild guild)
+        {
+            IAudioClient client;
+
+            if (ConnectedChannels.TryRemove(guild.Id, out client))
+            {
+                await client.StopAsync();
+                _logger.Log(LogSeverity.Info, $"Disconnected from voice on {guild.Name}.");
+            }
+        }
+
         public async Task SendAudioAsync(IGuild guild, string path)
         {
             if (!File.Exists(path))

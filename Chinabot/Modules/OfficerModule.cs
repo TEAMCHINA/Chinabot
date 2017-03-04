@@ -20,7 +20,7 @@ namespace Chinabot.Modules
         }
 
         [Command("leave")]
-        [Summary("Instructs the bot to leave this Guild.")]
+        [Summary("Instructs the bot to leave the audio channels for the current guild.")]
         public async Task Leave()
         {
             if (Context.Guild == null)
@@ -30,7 +30,7 @@ namespace Chinabot.Modules
             }
 
             await ReplyAsync("kbyethx");
-            await Context.Guild.LeaveAsync();
+            await _audioManager.LeaveAudioChannels(Context.Guild);
         }
 
         [Command("say")]

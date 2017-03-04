@@ -48,6 +48,31 @@ namespace Chinabot
                 return Task.CompletedTask;
             };
 
+            _client.UserVoiceStateUpdated += (user, oldState, newState) =>
+                {
+                    // User wasn't in voice and still isn't, this case should never be hit.
+                    if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
+                    {
+                        logger.Log($"User: {user.Username} is not in voice..");
+                    }
+                    // User was not in voice previously.
+                    else if (oldState.VoiceChannel == null)
+                    {
+                        logger.Log($"User: {user.Username} joined {newState.VoiceChannel.Name}");
+                    }
+                    // User is no longer in a voice channel.
+                    else if (newState.VoiceChannel == null)
+                    {
+                        logger.Log($"User: {user.Username} left voice chat.");
+                    // User changed channels.
+                    } else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
+                    {
+                        logger.Log($"User: {user.Username} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
+                    }
+
+                    return Task.CompletedTask;
+                };
+
             // Block this program until it is closed.
             await Task.Delay(-1);
         }
