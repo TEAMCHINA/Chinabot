@@ -61,9 +61,6 @@ namespace Chinabot {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Mjg1NjA0NDYzMzEyNTAyNzg0.C5vdKw.F8BpZc8y4TuV-LnOP30Cf0qWU4c.
-        /// </summary>
         internal static string BotToken {
             get {
                 return ResourceManager.GetString("BotToken", resourceCulture);

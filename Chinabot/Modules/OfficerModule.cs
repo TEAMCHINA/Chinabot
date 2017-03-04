@@ -29,7 +29,6 @@ namespace Chinabot.Modules
                 return;
             }
 
-            await ReplyAsync("kbyethx");
             await _audioManager.LeaveAudioChannels(Context.Guild);
         }
 

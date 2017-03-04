@@ -50,24 +50,26 @@ namespace Chinabot
 
             _client.UserVoiceStateUpdated += (user, oldState, newState) =>
                 {
+                    var nickname = (user as IGuildUser).Nickname;
+
                     // User wasn't in voice and still isn't, this case should never be hit.
                     if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {user.Username} is not in voice..");
+                        logger.Log($"User: {nickname} is not in voice.");
                     }
                     // User was not in voice previously.
                     else if (oldState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {user.Username} joined {newState.VoiceChannel.Name}");
+                        logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
                     }
                     // User is no longer in a voice channel.
                     else if (newState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {user.Username} left voice chat.");
+                        logger.Log($"User: {nickname} left voice chat.");
                     // User changed channels.
                     } else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
                     {
-                        logger.Log($"User: {user.Username} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
+                        logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
                     }
 
                     return Task.CompletedTask;
