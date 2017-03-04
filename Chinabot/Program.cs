@@ -27,7 +27,7 @@ namespace Chinabot
                 AudioMode = AudioMode.Outgoing,
             });
 
-            var token = "Mjg1NjA0NDYzMzEyNTAyNzg0.C5vdKw.F8BpZc8y4TuV-LnOP30Cf0qWU4c";
+            var token = AppResources.BotToken;
             var logger = new Logger();
 
             // Login and connect to Discord.
