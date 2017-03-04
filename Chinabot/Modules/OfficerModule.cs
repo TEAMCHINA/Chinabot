@@ -65,7 +65,7 @@ namespace Chinabot.Modules
         {
             if (Context.Message.Author.Username == "TEAMCHINA")
             {
-                await _audioManager.SendAudioAsync(Context.Guild, "airhorn.mp3");
+                await _audioManager.SendAudioAsync(Context.Guild, "Audio\\airhorn.mp3");
             }
         }
     }
