@@ -60,6 +60,7 @@ namespace Chinabot.Net
             _client.UserVoiceStateUpdated += (user, oldState, newState) =>
             {
                 var nickname = (user as IGuildUser).Nickname;
+                nickname = string.IsNullOrWhiteSpace(nickname) ? user.Username : nickname;
 
                 // User wasn't in voice and still isn't, this case should never be hit.
                 if (oldState.VoiceChannel == null && newState.VoiceChannel == null)

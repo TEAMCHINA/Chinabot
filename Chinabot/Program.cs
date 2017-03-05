@@ -45,8 +45,8 @@ namespace Chinabot
 
             var map = new DependencyMap();
             map.Add(_client);
-            map.Add<ILogger>(_logger);
-            map.Add<IAudioManager>(_audioManager);
+            map.Add(_logger);
+            map.Add(_audioManager);
 
             _handler = new CommandHandler();
             await _handler.Install(map);

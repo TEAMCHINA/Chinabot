@@ -1,10 +1,13 @@
-﻿using Chinabot.Net.Logging;
-using Discord;
-using Discord.Audio;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Speech.Synthesis;
 using System.Threading.Tasks;
+
+using Chinabot.Net.Logging;
+using Discord;
+using Discord.Audio;
+using NAudio.Wave;
 
 namespace Chinabot.Net.Managers
 {
@@ -71,10 +74,42 @@ namespace Chinabot.Net.Managers
             {
                 _logger.Log(LogSeverity.Info, $"Speaking, TTS text: {input}");
 
-                var output = CreateStream("Audio\\cena.mp3").StandardOutput.BaseStream;
-                var stream = client.CreatePCMStream(AudioApplication.Music, 1920);
-                await output.CopyToAsync(stream);
-                await stream.FlushAsync().ConfigureAwait(false);
+                using (var ms = new MemoryStream())
+                {
+                    using (var synth = new SpeechSynthesizer())
+                    {
+                        synth.SetOutputToWaveStream(ms);
+                        synth.Speak(input);
+
+                        await ms.FlushAsync();
+                        ms.Seek(0, SeekOrigin.Begin);
+                    }
+
+                    var outputFormat = new WaveFormat(48000, 16, 2);
+                    var stream = client.CreatePCMStream(AudioApplication.Mixed, 1920);
+
+                    using (var wav = new WaveFileReader(ms))
+                    using (var pcm = new MediaFoundationResampler(wav, outputFormat))
+                    {
+                        pcm.ResamplerQuality = 50;
+                        var bs = outputFormat.AverageBytesPerSecond / 50;
+                        var buff = new byte[bs];
+                        int bc = 0;
+
+                        while ((bc = pcm.Read(buff, 0, bs)) > 0)
+                        {
+                            if (bc < bs)
+                            {
+                                for (var i = bc; i < bs; i++)
+                                {
+                                    buff[i] = 0;
+                                }
+
+                                stream.Write(buff, 0, bs);
+                            }
+                        }
+                    }
+                }
             }
         }
 
