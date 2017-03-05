@@ -39,14 +39,6 @@ namespace Chinabot.Modules
             await ReplyAsync(input);
         }
 
-        [Command("speak")]
-        [Alias("speak")]
-        [Summary("echos the provided input as local TTS")]
-        public async Task Speak([Remainder] string input)
-        {
-            await _audioManager.Speak(Context.Guild, input);
-        }
-
         [Command("join", RunMode = RunMode.Async)]
         [Summary("Instructs the bot to join the current users audio channel.")]
         public async Task Join()

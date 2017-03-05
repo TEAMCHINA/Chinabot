@@ -57,32 +57,37 @@ namespace Chinabot
                 return Task.CompletedTask;
             };
 
-            _client.UserVoiceStateUpdated += (user, oldState, newState) =>
+            _client.UserVoiceStateUpdated += async (user, oldState, newState) =>
+            {
+                var nickname = (user as IGuildUser).Nickname;
+                nickname = string.IsNullOrWhiteSpace(nickname) ? user.Username : nickname;
+
+                var guild = (user as IGuildUser).Guild;
+
+                // User wasn't in voice and still isn't, this case should never be hit.
+                if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
                 {
-                    var nickname = (user as IGuildUser).Nickname;
-
-                    // User wasn't in voice and still isn't, this case should never be hit.
-                    if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
-                    {
-                        _logger.Log($"User: {nickname} is not in voice.");
-                    }
-                    // User was not in voice previously.
-                    else if (oldState.VoiceChannel == null)
-                    {
-                        _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
-                    }
-                    // User is no longer in a voice channel.
-                    else if (newState.VoiceChannel == null)
-                    {
-                        _logger.Log($"User: {nickname} left voice chat.");
-                    // User changed channels.
-                    } else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
-                    {
-                        _logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
-                    }
-
-                    return Task.CompletedTask;
-                };
+                    _logger.Log($"User: {nickname} is not in voice.");
+                }
+                // User was not in voice previously.
+                else if (oldState.VoiceChannel == null)
+                {
+                    _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
+                    await _audioManager.Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
+                }
+                // User is no longer in a voice channel.
+                else if (newState.VoiceChannel == null)
+                {
+                    _logger.Log($"User: {nickname} left voice chat.");
+                    await _audioManager.Speak(guild, $"{nickname} has left voice chat.");
+                }
+                // User changed channels.
+                else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
+                {
+                    _logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
+                    await _audioManager.Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
+                }
+            };
 
             // Block this program until it is closed.
             await Task.Delay(-1);
