@@ -8,5 +8,6 @@ namespace Chinabot.Managers
         Task JoinAudioChannel(IGuild guild, IVoiceChannel target);
         Task LeaveAudioChannels(IGuild guild);
         Task SendAudioAsync(IGuild guild, string path);
+        Task Speak(IGuild guild, string input);
     }
 }

@@ -64,6 +64,20 @@ namespace Chinabot.Managers
             }
         }
 
+        public async Task Speak(IGuild guild, string input)
+        {
+            IAudioClient client = null;
+            if (ConnectedChannels.TryGetValue(guild.Id, out client))
+            {
+                _logger.Log(LogSeverity.Info, $"Speaking, TTS text: {input}");
+
+                var output = CreateStream("Audio\\cena.mp3").StandardOutput.BaseStream;
+                var stream = client.CreatePCMStream(AudioApplication.Music, 1920);
+                await output.CopyToAsync(stream);
+                await stream.FlushAsync().ConfigureAwait(false);
+            }
+        }
+
         private Process CreateStream(string path)
         {
             var ffmpeg = new ProcessStartInfo

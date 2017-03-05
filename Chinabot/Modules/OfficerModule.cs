@@ -3,7 +3,6 @@ using Discord;
 using Discord.Commands;
 using Chinabot.Logging;
 using Chinabot.Managers;
-using Discord.Audio;
 
 namespace Chinabot.Modules
 {
@@ -38,6 +37,14 @@ namespace Chinabot.Modules
         public async Task Say([Remainder] string input)
         {
             await ReplyAsync(input);
+        }
+
+        [Command("speak")]
+        [Alias("speak")]
+        [Summary("echos the provided input as local TTS")]
+        public async Task Speak([Remainder] string input)
+        {
+            await _audioManager.Speak(Context.Guild, input);
         }
 
         [Command("join", RunMode = RunMode.Async)]

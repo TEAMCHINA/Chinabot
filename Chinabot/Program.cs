@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
@@ -18,6 +17,15 @@ namespace Chinabot
         private DiscordSocketClient _client;
         private CommandHandler _handler;
 
+        /* TODO: I don't like storing these dependencies as local fields but
+         * they're useful for now since the events fire against the
+         * DiscordSocketClient; ideally the only thing that should be happening
+         * in the main loop would be setting up the client and connecting, but
+         * I'll clean this up later.
+         */
+        private ILogger _logger;
+        private IAudioManager _audioManager;
+
         public async Task Start()
         {
             // Define the DiscordSocketClient
@@ -28,7 +36,8 @@ namespace Chinabot
             });
 
             var token = AppResources.BotToken;
-            var logger = new Logger();
+            _logger = new Logger();
+            _audioManager = new AudioManager(_logger);
 
             // Login and connect to Discord.
             await _client.LoginAsync(TokenType.Bot, token);
@@ -36,15 +45,15 @@ namespace Chinabot
 
             var map = new DependencyMap();
             map.Add(_client);
-            map.Add<ILogger>(logger);
-            map.Add<IAudioManager>(new AudioManager(logger));
+            map.Add<ILogger>(_logger);
+            map.Add<IAudioManager>(_audioManager);
 
             _handler = new CommandHandler();
             await _handler.Install(map);
 
             _client.Log += (msg) =>
             {
-                logger.Log(msg);
+                _logger.Log(msg);
                 return Task.CompletedTask;
             };
 
@@ -55,21 +64,21 @@ namespace Chinabot
                     // User wasn't in voice and still isn't, this case should never be hit.
                     if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {nickname} is not in voice.");
+                        _logger.Log($"User: {nickname} is not in voice.");
                     }
                     // User was not in voice previously.
                     else if (oldState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
+                        _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
                     }
                     // User is no longer in a voice channel.
                     else if (newState.VoiceChannel == null)
                     {
-                        logger.Log($"User: {nickname} left voice chat.");
+                        _logger.Log($"User: {nickname} left voice chat.");
                     // User changed channels.
                     } else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
                     {
-                        logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
+                        _logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
                     }
 
                     return Task.CompletedTask;
