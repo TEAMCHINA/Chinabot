@@ -57,6 +57,12 @@ namespace Chinabot
                 return Task.CompletedTask;
             };
 
+            // This event handler creates Mumble-style notifications.
+            // In order to determine when a user joins/leaves or changes channels we need
+            // to hook into the UserVoiceStateUpdated event that the Discord client fires
+            // for every user whenever anything changes for their voice status.
+            // TODO: Move this code to an appropriate manager; this logic really should
+            // not live in the main program execution loop.
             _client.UserVoiceStateUpdated += async (user, oldState, newState) =>
             {
                 var nickname = (user as IGuildUser).Nickname;
@@ -69,18 +75,21 @@ namespace Chinabot
                 {
                     _logger.Log($"User: {nickname} is not in voice.");
                 }
+
                 // User was not in voice previously.
                 else if (oldState.VoiceChannel == null)
                 {
                     _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
                     await _audioManager.Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
                 }
+
                 // User is no longer in a voice channel.
                 else if (newState.VoiceChannel == null)
                 {
                     _logger.Log($"User: {nickname} left voice chat.");
                     await _audioManager.Speak(guild, $"{nickname} has left voice chat.");
                 }
+
                 // User changed channels.
                 else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
                 {
