@@ -43,7 +43,10 @@ namespace Chinabot
             int argPos = 0;
 
             // Determine if the message has a valid prefix, adjust argPos 
-            if (!(message.HasMentionPrefix(_client.CurrentUser, ref argPos) || message.HasCharPrefix('!', ref argPos))) return;
+            if (!(message.HasMentionPrefix(_client.CurrentUser, ref argPos) || message.HasCharPrefix('!', ref argPos)))
+            {
+                return;
+            }
 
             logger.Log(LogSeverity.Info, $"Executing command: {message} on behalf of user {message.Author}");
 
