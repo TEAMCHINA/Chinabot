@@ -52,8 +52,12 @@ namespace Chinabot
 
             // Mark where the prefix ends and the command begins
             int argPos = 0;
+
             // Determine if the message has a valid prefix, adjust argPos 
-            if (!(message.HasMentionPrefix(_client.CurrentUser, ref argPos) || message.HasCharPrefix('!', ref argPos))) return;
+            if (!(message.HasMentionPrefix(_client.CurrentUser, ref argPos) || message.HasCharPrefix('!', ref argPos)))
+            {
+                return;
+            }
 
             // Create a Command Context
             var context = new CommandContext(_client, message);

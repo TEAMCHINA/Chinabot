@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Chinabot.Managers
 {
+    // Manages everything related to audio from joining voice channels to sending audio/TTS.
     public class AudioManager : IAudioManager
     {
         private readonly ConcurrentDictionary<ulong, AudioClientWrapper> ConnectedChannels = new ConcurrentDictionary<ulong, AudioClientWrapper>();
@@ -172,6 +173,14 @@ namespace Chinabot.Managers
             }
         }
 
+        // Unfortunately .NET Core does not have native support for TTS yet as
+        // the .NET Framework TTS functionality is heavily dependent on Windows
+        // APIs. While there are some 3rd party "hacks" available, those are
+        // also dependent on Windows machines which sort of defeats the point
+        // of developing in .NET Core so, for now, we're leveraging Discords TTS
+        // message functionality, rather than having the bot create the audio.
+        // Because the entirety of this functoinality is encapsulated here we can
+        // revisit this in the future to add native support.
         public async Task Speak(IGuild guild, string input)
         {
             // TODO: TTS the input.
