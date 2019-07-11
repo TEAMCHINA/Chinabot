@@ -36,7 +36,7 @@ namespace Chinabot
                 DefaultRunMode = RunMode.Async,
             });
 
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly());
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         }
 
         public async Task HandleCommand(SocketMessage parameterMessage)

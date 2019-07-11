@@ -27,6 +27,7 @@ namespace Chinabot.Managers
             _logger = logger;
             _client = client;
 
+            // We don't want to await this since it's a background loop.
             SetCleanupLoop();
         }
 
@@ -102,7 +103,7 @@ namespace Chinabot.Managers
                 throw new ArgumentException($"No channel \"{channelName}\" found.");
             }
 
-            // Check for and, if necessary, create Categories.
+            // Get our categories.
             var categories = await guild.GetCategoriesAsync();
             var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
             var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
@@ -142,7 +143,7 @@ namespace Chinabot.Managers
                 throw new ArgumentException($"No channel \"{channelName}\" found.");
             }
 
-            // Check for and, if necessary, create Categories.
+            // Get our categories
             var categories = await guild.GetCategoriesAsync();
             var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
             var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
@@ -206,7 +207,7 @@ namespace Chinabot.Managers
                     {
                         // Likely cannot happen since only admins can delete the opening message.
                         // Delete the channel, there's no history to preserve.
-                        _logger.Log(LogSeverity.Info, $"It's so quiet in {c.Mention} that it might as well not exist anymore... so it doesn't.", logChannel);
+                        _logger.Log(LogSeverity.Info, $"It's so quiet in #{c.Name} that it might as well not exist anymore... so it doesn't.", logChannel);
                         await c.DeleteAsync();
                     } else
                     {
