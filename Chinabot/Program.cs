@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
 using Chinabot.Logging;
-using Discord.Audio;
 using Chinabot.Managers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Chinabot
 {
@@ -12,7 +13,10 @@ namespace Chinabot
     {
         // Convert our sync main to an async main.
         public static void Main(string[] args) =>
-            new Program().Start().GetAwaiter().GetResult();
+            new Program()
+                .Start()
+                .GetAwaiter()
+                .GetResult();
 
         private DiscordSocketClient _client;
         private CommandHandler _handler;
@@ -25,6 +29,7 @@ namespace Chinabot
          */
         private ILogger _logger;
         private IAudioManager _audioManager;
+        private IChannelManager _channelManager;
 
         public async Task Start()
         {
@@ -32,24 +37,18 @@ namespace Chinabot
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Info,
-                AudioMode = AudioMode.Outgoing,
+                //AudioMode = AudioMode.Outgoing,
             });
 
             var token = AppResources.BotToken;
             _logger = new Logger();
             _audioManager = new AudioManager(_logger);
+            _channelManager = new ChannelManager(_logger, _client);
 
-            // Login and connect to Discord.
-            await _client.LoginAsync(TokenType.Bot, token);
-            await _client.StartAsync();
+            var serviceCollection = ConfigureServices();
 
-            var map = new DependencyMap();
-            map.Add(_client);
-            map.Add(_logger);
-            map.Add(_audioManager);
-
-            _handler = new CommandHandler();
-            await _handler.Install(map);
+            _handler = serviceCollection.GetRequiredService<CommandHandler>();
+            await _handler.Install(serviceCollection);
 
             _client.Log += (msg) =>
             {
@@ -57,40 +56,30 @@ namespace Chinabot
                 return Task.CompletedTask;
             };
 
-            _client.UserVoiceStateUpdated += async (user, oldState, newState) =>
-            {
-                var nickname = (user as IGuildUser).Nickname;
-                nickname = string.IsNullOrWhiteSpace(nickname) ? user.Username : nickname;
+            _client.UserVoiceStateUpdated += _audioManager.UserVoiceStateUpdatedHandler;
 
-                var guild = (user as IGuildUser).Guild;
-
-                // User wasn't in voice and still isn't, this case should never be hit.
-                if (oldState.VoiceChannel == null && newState.VoiceChannel == null)
-                {
-                    _logger.Log($"User: {nickname} is not in voice.");
-                }
-                // User was not in voice previously.
-                else if (oldState.VoiceChannel == null)
-                {
-                    _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}");
-                    await _audioManager.Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
-                }
-                // User is no longer in a voice channel.
-                else if (newState.VoiceChannel == null)
-                {
-                    _logger.Log($"User: {nickname} left voice chat.");
-                    await _audioManager.Speak(guild, $"{nickname} has left voice chat.");
-                }
-                // User changed channels.
-                else if (oldState.VoiceChannel.Id != newState.VoiceChannel.Id)
-                {
-                    _logger.Log($"User: {nickname} moved to {newState.VoiceChannel.Name} (from {oldState.VoiceChannel.Name})");
-                    await _audioManager.Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
-                }
-            };
+            // Login and connect to Discord.
+            await _client.LoginAsync(TokenType.Bot, token);
+            await _client.StartAsync();
 
             // Block this program until it is closed.
             await Task.Delay(-1);
+        }
+
+        private IServiceProvider ConfigureServices()
+        {
+            return new ServiceCollection()
+                // Base
+                .AddSingleton(_client)
+                .AddSingleton<CommandService>()
+                .AddSingleton<CommandHandler>()
+                // Logging
+                .AddSingleton(_logger)
+                // Add additional services here...
+                .AddSingleton(_audioManager)
+                .AddSingleton(_channelManager)
+
+                .BuildServiceProvider();
         }
     }
 }
