@@ -27,8 +27,28 @@ namespace Chinabot.Managers
             _logger = logger;
             _client = client;
 
+            _client.MessageReceived += _client_MessageReceived;
+
             // We don't want to await this since it's a background loop.
             SetCleanupLoop();
+        }
+
+        private async Task _client_MessageReceived(SocketMessage arg)
+        {
+            var channel = arg.Channel as ITextChannel;
+            var guild = (arg.Channel as SocketGuildChannel).Guild as IGuild;
+
+            // Get our categories
+            var categories = await guild.GetCategoriesAsync();
+            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
+            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
+
+            if (channel.CategoryId == inactiveCategory.Id)
+            {
+                var logChannel = await GetLogChannel(guild);
+                await channel.ModifyAsync(p => p.CategoryId = activeCategory.Id);
+                _logger.Log(LogSeverity.Info, $"{arg.Author.Username} brings {channel.Mention} back from the dead!", logChannel);
+            }
         }
 
         public async Task CreateConversationChannel(ICommandContext context, string input)
@@ -67,7 +87,7 @@ namespace Chinabot.Managers
                 if (channel.CategoryId == activeCategory.Id)
                 {
                     // Channel already exists and is in the active category.
-                    await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} is talking about {channel.Mention}");
+                    await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} is talking in {channel.Mention}");
                 }
                 else if (channel.CategoryId == inactiveCategory.Id)
                 {
@@ -85,6 +105,7 @@ namespace Chinabot.Managers
             }
 
             await channel.SendMessageAsync(remainder);
+            await context.Message.DeleteAsync();
         }
 
         public async Task PromoteChannel(ICommandContext context, string input)
@@ -115,10 +136,7 @@ namespace Chinabot.Managers
             }
             else if (channel.CategoryId == activeCategory.Id) {
                 // Promote it to a full channel! (ie. no category)
-                await channel.ModifyAsync(p => {
-                    p.CategoryId = null;
-                    p.Position = 1;
-                    });
+                await channel.ModifyAsync(p => p.CategoryId = null);
                 await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} turns {channel.Mention} into a real boy.");
             } else if (channel.CategoryId == inactiveCategory.Id)
             {
@@ -196,7 +214,7 @@ namespace Chinabot.Managers
                     continue;
                 }
 
-                _logger.Log(LogSeverity.Info, $"Cleaning up conversations for {guild.Name}; found {channels.Count} channels", logChannel);
+                _logger.Log(LogSeverity.Info, $"Cleaning up conversations for {guild.Name}; found {channels.Count} channels");
 
                 foreach (var c in channels)
                 {

@@ -66,7 +66,7 @@ namespace Chinabot.Managers
                 this.ToString(),
                 $"No target channel provided, attempting to join channel: {target.Name}"),
                 logChannel);
-            var client = await ((IVoiceChannel)target).ConnectAsync();
+            var client = await target.ConnectAsync();
 
             var wrapper = new AudioClientWrapper(target.Id, client);
 
