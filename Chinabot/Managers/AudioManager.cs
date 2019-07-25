@@ -217,17 +217,24 @@ namespace Chinabot.Managers
             else if (oldState.VoiceChannel == null)
             {
                 _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}", logChannel);
-                var wrapper = ConnectedChannels[guild.Id];
+                ConnectedChannels.TryGetValue(guild.Id, out AudioClientWrapper wrapper);
 
-                if (wrapper.ChannelId == newState.VoiceChannel.Id)
+                var playIntro = false;
+                if (wrapper != null && wrapper.ChannelId == newState.VoiceChannel.Id)
                 {
                     if (_introThemes.ContainsKey(gUser.Id))
                     {
-                        await SendAudioAsync(guild, _introThemes[gUser.Id]);
-                    } else
-                    {
-                        await Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
+                        playIntro = true;
                     }
+                }
+
+                if (playIntro)
+                {
+                    await SendAudioAsync(guild, _introThemes[gUser.Id]);
+                }
+                else
+                {
+                    await Speak(guild, $"{nickname} joined {newState.VoiceChannel.Name}.");
                 }
             }
             // User is no longer in a voice channel.

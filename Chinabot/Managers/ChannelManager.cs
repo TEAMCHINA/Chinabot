@@ -39,14 +39,12 @@ namespace Chinabot.Managers
             var guild = (arg.Channel as SocketGuildChannel).Guild as IGuild;
 
             // Get our categories
-            var categories = await guild.GetCategoriesAsync();
-            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
-            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
+            var categories = await GetConversationCategories(guild);
 
-            if (channel.CategoryId == inactiveCategory.Id)
+            if (channel.CategoryId == categories.InactiveConversations.Id)
             {
                 var logChannel = await GetLogChannel(guild);
-                await channel.ModifyAsync(p => p.CategoryId = activeCategory.Id);
+                await channel.ModifyAsync(p => p.CategoryId = categories.ActiveConversations.Id);
                 _logger.Log(LogSeverity.Info, $"{arg.Author.Username} brings {channel.Mention} back from the dead!", logChannel);
             }
         }
@@ -61,21 +59,7 @@ namespace Chinabot.Managers
 
             ValidateChannelName(channelName);
 
-            // Check for and, if necessary, create Categories.
-            var categories = await guild.GetCategoriesAsync();
-            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
-
-            if (activeCategory == null)
-            {
-                activeCategory = await guild.CreateCategoryAsync(ACTIVE_CATEGORY_NAME);
-            }
-
-            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
-
-            if (inactiveCategory == null)
-            {
-                inactiveCategory = await guild.CreateCategoryAsync(INACTIVE_CATEGORY_NAME);
-            }
+            var categories = await GetConversationCategories(guild);
 
             // Check if the channel already exists.
             var channels = await guild.GetTextChannelsAsync();
@@ -84,15 +68,15 @@ namespace Chinabot.Managers
             if (channel != null)
             {
                 // Channel exists, need to see what Category it belongs to.
-                if (channel.CategoryId == activeCategory.Id)
+                if (channel.CategoryId == categories.ActiveConversations.Id)
                 {
                     // Channel already exists and is in the active category.
                     await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} is talking in {channel.Mention}");
                 }
-                else if (channel.CategoryId == inactiveCategory.Id)
+                else if (channel.CategoryId == categories.InactiveConversations.Id)
                 {
                     // Channel exists but was in the graveyard. c 'revive' channel
-                    await channel.ModifyAsync(p => p.CategoryId = activeCategory.Id);
+                    await channel.ModifyAsync(p => p.CategoryId = categories.InactiveConversations.Id);
 
                     await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} casts 'revive thread' on {channel.Mention}");
                 }
@@ -100,7 +84,7 @@ namespace Chinabot.Managers
             }
             else
             {
-                channel = await guild.CreateTextChannelAsync(channelName, p => p.CategoryId = activeCategory.Id);
+                channel = await guild.CreateTextChannelAsync(channelName, p => p.CategoryId = categories.ActiveConversations.Id);
                 await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} starts a conversation about {channel.Mention}");
             }
 
@@ -124,23 +108,20 @@ namespace Chinabot.Managers
                 throw new ArgumentException($"No channel \"{channelName}\" found.");
             }
 
-            // Get our categories.
-            var categories = await guild.GetCategoriesAsync();
-            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
-            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
+            var categories = await GetConversationCategories(guild);
 
             if (channel.CategoryId == null)
             {
                 // Channel is already a real boy!
                 await SendConversationNotice(context.Message.Channel, $"Channel {channel.Mention} is already a real boy!");
             }
-            else if (channel.CategoryId == activeCategory.Id) {
+            else if (channel.CategoryId == categories.ActiveConversations.Id) {
                 // Promote it to a full channel! (ie. no category)
                 await channel.ModifyAsync(p => p.CategoryId = null);
                 await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} turns {channel.Mention} into a real boy.");
-            } else if (channel.CategoryId == inactiveCategory.Id)
+            } else if (channel.CategoryId == categories.InactiveConversations.Id)
             {
-                await channel.ModifyAsync(p => p.CategoryId = activeCategory.Id);
+                await channel.ModifyAsync(p => p.CategoryId = categories.ActiveConversations.Id);
                 await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} casts 'revive thread' on {channel.Mention}");
             }
         }
@@ -161,17 +142,14 @@ namespace Chinabot.Managers
                 throw new ArgumentException($"No channel \"{channelName}\" found.");
             }
 
-            // Get our categories
-            var categories = await guild.GetCategoriesAsync();
-            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
-            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
+            var categories = await GetConversationCategories(guild);
 
-            if (channel.CategoryId != activeCategory.Id)
+            if (channel.CategoryId != categories.ActiveConversations.Id)
             {
                 throw new ArgumentException($"Channel \"{channelName}\" is not eligible to be demoted.");
             }
 
-            await channel.ModifyAsync(p => p.CategoryId = inactiveCategory.Id);
+            await channel.ModifyAsync(p => p.CategoryId = categories.InactiveConversations.Id);
             await SendConversationNotice(context.Message.Channel, $"{context.Message.Author.Username} tries to get the last word in on {channel.Mention}");
         }
 
@@ -195,18 +173,10 @@ namespace Chinabot.Managers
                 IGuild guild = g as IGuild;
                 var logChannel = await GetLogChannel(g);
 
-                var categories = await guild.GetCategoriesAsync();
-                var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
-                var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
-
-                if (activeCategory == null || inactiveCategory == null)
-                {
-                    _logger.Log(LogSeverity.Info, $"Guild {guild.Name} does not have active/inactive conversations categories.", logChannel);
-                    continue;
-                }
+                var categories = await GetConversationCategories(guild);
 
                 var channels = (await guild.GetTextChannelsAsync())
-                    .Where(c => c.CategoryId == activeCategory.Id)
+                    .Where(c => c.CategoryId == categories.ActiveConversations.Id)
                     .ToList();
 
                 if (channels.Count == 0)
@@ -232,11 +202,32 @@ namespace Chinabot.Managers
                         if (message.CreatedAt.AddDays(1) <= DateTime.Now)
                         {
                             _logger.Log(LogSeverity.Info, $"The {c.Mention} conversation died, moving it to the graveyard.", logChannel);
-                            await c.ModifyAsync(p => p.CategoryId = inactiveCategory.Id);
+                            await c.ModifyAsync(p => p.CategoryId = categories.InactiveConversations.Id);
                         }
                     }
                 }
             }
+        }
+
+        private async Task<ConversationCategories> GetConversationCategories(IGuild guild)
+        {
+            // Check for and, if necessary, create Categories.
+            var categories = await guild.GetCategoriesAsync();
+            var activeCategory = categories.FirstOrDefault(c => string.Compare(c.Name, ACTIVE_CATEGORY_NAME) == 0);
+
+            if (activeCategory == null)
+            {
+                activeCategory = await guild.CreateCategoryAsync(ACTIVE_CATEGORY_NAME);
+            }
+
+            var inactiveCategory = categories.FirstOrDefault(c => string.Compare(c.Name, INACTIVE_CATEGORY_NAME) == 0);
+
+            if (inactiveCategory == null)
+            {
+                inactiveCategory = await guild.CreateCategoryAsync(INACTIVE_CATEGORY_NAME);
+            }
+
+            return new ConversationCategories(activeCategory, inactiveCategory);
         }
 
         private void ValidateChannelName(string channelName)
@@ -272,5 +263,19 @@ namespace Chinabot.Managers
 
             return logChannel;
         }
+
+
+        protected class ConversationCategories
+        {
+            public ICategoryChannel ActiveConversations { get; set; }
+            public ICategoryChannel InactiveConversations { get; set; }
+
+            public ConversationCategories(ICategoryChannel activeConversations, ICategoryChannel inactiveConversations)
+            {
+                ActiveConversations = activeConversations;
+                InactiveConversations = inactiveConversations;
+            }
+        }
+
     }
 }
