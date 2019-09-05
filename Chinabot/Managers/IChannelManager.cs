@@ -5,6 +5,7 @@ namespace Chinabot.Managers
 {
     public interface IChannelManager
     {
+        Task Start();
         Task CreateConversationChannel(ICommandContext context, string input);
         Task PromoteChannel(ICommandContext context, string input);
         Task DemoteChannel(ICommandContext context, string input);

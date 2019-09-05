@@ -6,6 +6,7 @@ using Discord.Commands;
 using Chinabot.Logging;
 using Chinabot.Managers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading;
 
 namespace Chinabot
 {
@@ -46,6 +47,15 @@ namespace Chinabot
             _channelManager = new ChannelManager(_logger, _client);
 
             var serviceCollection = ConfigureServices();
+
+            var clientReady = false;
+
+            _client.Ready += async () => {
+                Task.Run(async () => {
+
+                    await _channelManager.Start();
+                });
+            };
 
             _handler = serviceCollection.GetRequiredService<CommandHandler>();
             await _handler.Install(serviceCollection);

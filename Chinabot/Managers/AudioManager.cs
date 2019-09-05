@@ -217,10 +217,10 @@ namespace Chinabot.Managers
             else if (oldState.VoiceChannel == null)
             {
                 _logger.Log($"User: {nickname} joined {newState.VoiceChannel.Name}", logChannel);
-                ConnectedChannels.TryGetValue(guild.Id, out AudioClientWrapper wrapper);
-
+                
                 var playIntro = false;
-                if (wrapper != null && wrapper.ChannelId == newState.VoiceChannel.Id)
+                if (ConnectedChannels.TryGetValue(guild.Id, out AudioClientWrapper wrapper)
+                    && wrapper.ChannelId == newState.VoiceChannel.Id)
                 {
                     if (_introThemes.ContainsKey(gUser.Id))
                     {

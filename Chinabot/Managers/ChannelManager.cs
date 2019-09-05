@@ -28,9 +28,11 @@ namespace Chinabot.Managers
             _client = client;
 
             _client.MessageReceived += _client_MessageReceived;
+        }
 
-            // We don't want to await this since it's a background loop.
-            SetCleanupLoop();
+        public async Task Start()
+        {
+            await SetCleanupLoop();
         }
 
         private async Task _client_MessageReceived(SocketMessage arg)

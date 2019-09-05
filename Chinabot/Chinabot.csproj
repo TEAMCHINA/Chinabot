@@ -47,8 +47,14 @@
     <None Update="Audio\curb.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Audio\curb_full.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Audio\it_doesnt_matter.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Audio\it_doesnt_matter_full.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Audio\know_your_role.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
